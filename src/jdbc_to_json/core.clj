@@ -51,8 +51,7 @@
     :required true]
    ["-u" "--username USERNAME" "Database username"
     :required true]
-   ["-w" "--password PASSWORD" "Database password"
-    :required true]
+   ["-w" "--password PASSWORD" "Database password (will prompt if not provided)"]
    ["-s" "--schema SCHEMA" "Database schema"
     :default "public"]
    ["-o" "--output-dir OUTPUT_DIR" "Output directory for JSONL files"
@@ -74,6 +73,18 @@
 (defn error-msg [errors]
   (str "The following errors occurred while parsing your command:\n\n"
        (str/join \newline errors)))
+
+(defn prompt-for-password
+  "Prompt user for password input without echoing to console"
+  []
+  (print "Enter database password: ")
+  (flush)
+  (let [console (System/console)]
+    (if console
+      (String. (.readPassword console))
+      (do
+        (println "Warning: Console not available, password will be visible")
+        (read-line)))))
 
 (defn validate-args [args]
   (let [{:keys [options arguments errors summary]} (parse-opts args cli-options)]
@@ -229,11 +240,14 @@
     (if exit-message
       (exit (if ok? 0 1) exit-message)
       
-      (let [result (export-all-tables options)]
+      (let [final-options (if (:password options)
+                           options
+                           (assoc options :password (prompt-for-password)))
+            result (export-all-tables final-options)]
         (if (:success result)
           (do
             (println (str "Export completed successfully! "
-                         "Exported " (:successful result) " tables to " (:output-dir options)))
+                         "Exported " (:successful result) " tables to " (:output-dir final-options)))
             (System/exit 0))
           (do
             (println (str "Export failed: " (or (:error result) (:message result))))
