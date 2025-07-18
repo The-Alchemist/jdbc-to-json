@@ -1,4 +1,4 @@
-(ns postgresql-to-json.core
+(ns jdbc-to-json.core
   (:require [clojure.java.jdbc :as jdbc]
             [clojure.tools.cli :refer [parse-opts]]
             [clojure.string :as str]
