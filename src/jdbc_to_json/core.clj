@@ -215,9 +215,7 @@
             result (export-all-tables final-options)]
         (if (:success result)
           (do
-            (println (str "Export completed successfully! "
-                         "Exported " (:successful result) " tables to " (:output-dir final-options)))
             (System/exit 0))
           (do
             (println (str "Export failed: " (or (:error result) (:message result))))
-            (System/exit 1))))))) 
+            (System/exit 1)))))))
