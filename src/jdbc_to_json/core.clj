@@ -3,43 +3,10 @@
             [clojure.tools.cli :refer [parse-opts]]
             [clojure.string :as str]
             [clojure.java.io :as io]
-            [taoensso.timbre :as log])
+            [taoensso.timbre :as log]
+            [jdbc-to-json.logging :as logging])
   (:import [java.io File])
   (:gen-class))
-
-;; Configure Timbre for colorized structured logging
-(log/merge-config!
-  {:level :info
-   :output-fn (fn [{:keys [level ?err msg_ ?ns-str ?file timestamp_ ?line vargs]}]
-                (let [timestamp (force timestamp_)
-                      message (force msg_)
-                      level-color (case level
-                                    :trace  "\u001B[37mTRACE\u001B[0m"  ; white
-                                    :debug  "\u001B[36mDEBUG\u001B[0m"  ; cyan
-                                    :info   "\u001B[32mINFO \u001B[0m"  ; green
-                                    :warn   "\u001B[33mWARN \u001B[0m"  ; yellow
-                                    :error  "\u001B[31mERROR\u001B[0m"  ; red
-                                    :fatal  "\u001B[35mFATAL\u001B[0m"  ; magenta
-                                    (str level))
-                      ns-short (when ?ns-str 
-                                (last (str/split ?ns-str #"\.")))]
-                  (str "\u001B[90m" timestamp "\u001B[0m "  ; gray timestamp
-                       level-color " "
-                       "\u001B[34m[" ns-short "]\u001B[0m "  ; blue namespace
-                       "\u001B[97m" message "\u001B[0m"      ; bright white message
-                       (when (and vargs (> (count vargs) 1))  ; structured data
-                         (let [structured-data (apply hash-map (rest vargs))]
-                           (str " \u001B[36m" 
-                                (str/join " " 
-                                  (map (fn [[k v]] 
-                                         (str (name k) "=" 
-                                              (if (string? v) 
-                                                (str "\"" v "\"") 
-                                                v))) 
-                                       structured-data))
-                                "\u001B[0m")))  ; cyan for structured data
-                       (when ?err (str "\n" (log/stacktrace ?err))))))
-   :appenders {:println (log/println-appender {:stream :auto})}})
 
 (def cli-options
   [["-h" "--host HOST" "Database host"
@@ -236,6 +203,8 @@
   (System/exit status))
 
 (defn -main [& args]
+  (logging/configure-logging!)
+
   (let [{:keys [options exit-message ok?]} (validate-args args)]
     (if exit-message
       (exit (if ok? 0 1) exit-message)
