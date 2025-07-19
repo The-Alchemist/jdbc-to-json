@@ -23,7 +23,7 @@
     :default "public"]
    ["-o" "--output-dir OUTPUT_DIR" "Output directory for JSONL files"
     :default "./output"]
-   ])
+   ["-?" "--help" "Show this help message"]])
 
 (defn usage [options-summary]
   (->> ["PostgreSQL to JSON Export Tool"
@@ -56,6 +56,9 @@
 (defn validate-args [args]
   (let [{:keys [options arguments errors summary]} (parse-opts args cli-options)]
     (cond
+      (empty? args) ; no args => show usage
+      {:exit-message (usage summary) :ok? true}
+      
       (:help options) ; help => exit OK with usage summary
       {:exit-message (usage summary) :ok? true}
       
